@@ -13,9 +13,16 @@
     127,
     124,
     154,
-    130
+    130,
+    119,
+    152,
+    121,
+    794,
+    126,
+    133,
+    136
   ],
-  "playersInserted": 762,
-  "relationshipsInserted": 762,
-  "completed": false
+  "playersInserted": 1182,
+  "relationshipsInserted": 1182,
+  "completed": true
 }

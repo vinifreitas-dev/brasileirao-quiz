@@ -4,6 +4,10 @@ import { HomePage } from "./components/layout/HomePage";
 import { AuthPage } from "./features/auth/components/AuthPage";
 import { AuthGuard } from "./features/auth/components/AuthGuard";
 import { GridPage } from "./features/grid/components/GridPage";
+import { ConnectionsPage } from "./features/connections/components/ConnectionsPage";
+import { WordlePage } from "./features/wordle/components/WordlePage";
+import { GuessPage } from "./features/guess/components/GuessPage";
+import { ResetPasswordPage } from "./features/auth/components/ResetPasswordPage";
 
 const router = createBrowserRouter([
   {
@@ -20,16 +24,27 @@ const router = createBrowserRouter([
       },
       {
         path: "connections",
-        element: <PlaceholderPage title="Connections BR" />,
+        element: <ConnectionsPage />,
+      },
+      {
+        path: "wordle",
+        element: <WordlePage />,
+      },
+      {
+        path: "guess",
+        element: <GuessPage />,
       },
       {
         path: "leaderboard",
         element: <PlaceholderPage title="Leaderboard" />,
       },
       {
-        // Rota pública: qualquer pessoa pode acessar
         path: "auth",
         element: <AuthPage />,
+      },
+      {
+        path: "reset-password",
+        element: <ResetPasswordPage />,
       },
       {
         // Rota protegida: AuthGuard redireciona para /auth se não logado

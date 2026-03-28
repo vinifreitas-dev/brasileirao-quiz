@@ -15,6 +15,7 @@ interface GridStore {
 
   // Ações
   startGame: () => Promise<void>;
+  startFromConfig: (challenge: GridChallenge) => void;
   selectCell: (row: number, col: number) => void;
   closeSearch: () => void;
   submitGuess: (playerId: string, playerName: string, playerPhoto: string | null) => Promise<void>;
@@ -51,6 +52,19 @@ export const useGridStore = create<GridStore>((set, get) => ({
       set({ loading: false });
       return;
     }
+    set({
+      challenge,
+      cells: createEmptyCells(),
+      guessesLeft: 9,
+      completed: false,
+      score: 0,
+      usedPlayerIds: [],
+      selectedCell: null,
+      loading: false,
+    });
+  },
+
+  startFromConfig: (challenge: GridChallenge) => {
     set({
       challenge,
       cells: createEmptyCells(),

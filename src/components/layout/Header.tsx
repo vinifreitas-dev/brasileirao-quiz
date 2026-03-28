@@ -5,7 +5,7 @@ const navLinks = [
   { label: "Início", path: "/" },
   { label: "Grid", path: "/grid" },
   { label: "Connections", path: "/connections" },
-  { label: "Leaderboard", path: "/leaderboard" },
+  { label: "Wordle", path: "/wordle" },
 ];
 
 export function Header() {

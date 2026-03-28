@@ -19,7 +19,7 @@ const games = [
       "Agrupe 16 jogadores em 4 categorias secretas. Cuidado com as armadilhas!",
     emoji: "🔗",
     path: "/connections",
-    available: false,
+    available: true,
   },
   {
     id: "wordle",
@@ -28,7 +28,7 @@ const games = [
       "Adivinhe o nome do jogador em 6 tentativas com dicas coloridas.",
     emoji: "🔤",
     path: "/wordle",
-    available: false,
+    available: true,
   },
   {
     id: "guess",
@@ -37,7 +37,7 @@ const games = [
       "Faça perguntas sim/não para descobrir o jogador misterioso do dia.",
     emoji: "🕵️",
     path: "/guess",
-    available: false,
+    available: true,
   },
 ];
 

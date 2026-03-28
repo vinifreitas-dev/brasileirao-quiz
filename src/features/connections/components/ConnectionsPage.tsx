@@ -1,55 +1,50 @@
 import { useEffect, useRef } from "react";
-import { useGridStore } from "../hooks/useGridGame";
-import { generateGridChallenge } from "../utils";
-import { GridBoard } from "./GridBoard";
-import { GridResult } from "./GridResult";
+import { useConnectionsStore } from "../hooks/useConnectionsGame";
+import { generateConnectionsChallenge } from "../utils";
+import { ConnectionsBoard } from "./ConnectionsBoard";
+import { ConnectionsResult } from "./ConnectionsResult";
 import { DailyModeToggle } from "../../../components/ui/DailyModeToggle";
 import { useDailyMode } from "../../../hooks/useDailyMode";
-import type { GridChallenge } from "../types";
+import type { ConnectionsChallenge } from "../types";
 
-export function GridPage() {
-  const challenge = useGridStore((s) => s.challenge);
-  const loading = useGridStore((s) => s.loading);
-  const completed = useGridStore((s) => s.completed);
-  const score = useGridStore((s) => s.score);
-  const startGame = useGridStore((s) => s.startGame);
-  const startFromConfig = useGridStore((s) => s.startFromConfig);
-  const resetGame = useGridStore((s) => s.resetGame);
+export function ConnectionsPage() {
+  const challenge = useConnectionsStore((s) => s.challenge);
+  const loading = useConnectionsStore((s) => s.loading);
+  const completed = useConnectionsStore((s) => s.completed);
+  const won = useConnectionsStore((s) => s.won);
+  const livesLeft = useConnectionsStore((s) => s.livesLeft);
+  const startGame = useConnectionsStore((s) => s.startGame);
+  const startFromConfig = useConnectionsStore((s) => s.startFromConfig);
+  const resetGame = useConnectionsStore((s) => s.resetGame);
 
   const daily = useDailyMode();
   const initialized = useRef(false);
 
-  // Carregar jogo ao montar ou quando muda o modo
   useEffect(() => {
     async function load() {
       resetGame();
       if (daily.mode === "daily") {
-        const config = await daily.loadDailyChallenge("grid", generateGridChallenge);
-        if (config) {
-          startFromConfig(config as GridChallenge);
-        }
+        const config = await daily.loadDailyChallenge("connections", generateConnectionsChallenge);
+        if (config) startFromConfig(config as ConnectionsChallenge);
       } else {
         await startGame();
       }
     }
-    // Evitar double-load no strict mode
     if (!initialized.current) {
       initialized.current = true;
       load();
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Quando muda o modo, recarregar
   const modeRef = useRef(daily.mode);
   useEffect(() => {
     if (modeRef.current === daily.mode) return;
     modeRef.current = daily.mode;
-
     async function reload() {
       resetGame();
       if (daily.mode === "daily") {
-        const config = await daily.loadDailyChallenge("grid", generateGridChallenge);
-        if (config) startFromConfig(config as GridChallenge);
+        const config = await daily.loadDailyChallenge("connections", generateConnectionsChallenge);
+        if (config) startFromConfig(config as ConnectionsChallenge);
       } else {
         await startGame();
       }
@@ -57,17 +52,20 @@ export function GridPage() {
     reload();
   }, [daily.mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Salvar score quando completa no modo diário
   useEffect(() => {
     if (completed && daily.mode === "daily") {
-      daily.saveScore({ score, completed: true, attempts: 9 - useGridStore.getState().guessesLeft });
+      daily.saveScore({
+        score: won ? 4 - (4 - livesLeft) : 0,
+        completed: true,
+        attempts: 4 - livesLeft,
+      });
     }
   }, [completed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading || daily.loadingDaily) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-lg text-surface-400">Gerando desafio...</p>
+        <p className="text-lg text-surface-400">Montando o desafio...</p>
       </div>
     );
   }
@@ -91,10 +89,10 @@ export function GridPage() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center px-4 py-6">
       <h1 className="mb-2 text-2xl font-bold text-surface-50 sm:text-3xl">
-        🟩 Grid Brasileirão
+        🔗 Connections BR
       </h1>
       <p className="mb-4 max-w-md text-center text-sm text-surface-400">
-        Encontre um jogador que atenda ao critério da linha e da coluna. Você tem 9 tentativas.
+        Agrupe os 16 jogadores em 4 categorias de 4. Você tem 4 vidas.
       </p>
 
       <DailyModeToggle
@@ -103,8 +101,22 @@ export function GridPage() {
         alreadyPlayed={daily.alreadyPlayed}
       />
 
-      <GridBoard />
-      <GridResult />
+      <ConnectionsBoard />
+      <ConnectionsResult />
+
+      <style>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          20% { transform: translateX(-8px); }
+          40% { transform: translateX(8px); }
+          60% { transform: translateX(-6px); }
+          80% { transform: translateX(6px); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }

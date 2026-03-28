@@ -3,9 +3,10 @@ import { useAuthStore } from "../../../stores/authStore";
 
 interface LoginFormProps {
   onSwitchToSignUp: () => void;
+  onForgotPassword: () => void;
 }
 
-export function LoginForm({ onSwitchToSignUp }: LoginFormProps) {
+export function LoginForm({ onSwitchToSignUp, onForgotPassword }: LoginFormProps) {
   const { signIn, loading, error, clearError } = useAuthStore();
 
   const [email, setEmail] = useState("");
@@ -65,6 +66,16 @@ export function LoginForm({ onSwitchToSignUp }: LoginFormProps) {
             placeholder="••••••••"
             className="w-full rounded-lg border border-surface-700 bg-surface-800 px-3 py-2 text-surface-100 placeholder-surface-500 outline-none transition-colors focus:border-primary-500"
           />
+        </div>
+
+        <div className="text-right">
+          <button
+            type="button"
+            onClick={onForgotPassword}
+            className="text-sm text-primary-400 hover:text-primary-300"
+          >
+            Esqueci minha senha
+          </button>
         </div>
 
         {error && (

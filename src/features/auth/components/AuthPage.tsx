@@ -3,17 +3,14 @@ import { Navigate } from "react-router-dom";
 import { useAuthStore } from "../../../stores/authStore";
 import { LoginForm } from "./LoginForm";
 import { SignUpForm } from "./SignUpForm";
+import { ForgotPasswordForm } from "./ForgotPasswordForm";
 
-// Tipo de tela: login, signup, ou mensagem de confirmação pós-signup
-type AuthView = "login" | "signup" | "confirm";
+type AuthView = "login" | "signup" | "confirm" | "forgot";
 
 export function AuthPage() {
   const { user } = useAuthStore();
   const [view, setView] = useState<AuthView>("login");
 
-  // Se já está logado, redireciona para a home.
-  // Navigate substitui a rota atual no histórico (replace),
-  // então o botão "voltar" do browser não retorna ao login.
   if (user) {
     return <Navigate to="/" replace />;
   }
@@ -21,7 +18,10 @@ export function AuthPage() {
   return (
     <div className="flex flex-1 items-center justify-center px-4 py-8">
       {view === "login" && (
-        <LoginForm onSwitchToSignUp={() => setView("signup")} />
+        <LoginForm
+          onSwitchToSignUp={() => setView("signup")}
+          onForgotPassword={() => setView("forgot")}
+        />
       )}
 
       {view === "signup" && (
@@ -29,6 +29,10 @@ export function AuthPage() {
           onSwitchToLogin={() => setView("login")}
           onSuccess={() => setView("confirm")}
         />
+      )}
+
+      {view === "forgot" && (
+        <ForgotPasswordForm onBackToLogin={() => setView("login")} />
       )}
 
       {view === "confirm" && (
