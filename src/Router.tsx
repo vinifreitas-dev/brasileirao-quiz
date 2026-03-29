@@ -8,6 +8,7 @@ import { ConnectionsPage } from "./features/connections/components/ConnectionsPa
 import { WordlePage } from "./features/wordle/components/WordlePage";
 import { GuessPage } from "./features/guess/components/GuessPage";
 import { ResetPasswordPage } from "./features/auth/components/ResetPasswordPage";
+import { LeaderboardPage } from "./features/leaderboard/components/LeaderboardPage";
 
 const router = createBrowserRouter([
   {
@@ -36,7 +37,7 @@ const router = createBrowserRouter([
       },
       {
         path: "leaderboard",
-        element: <PlaceholderPage title="Leaderboard" />,
+        element: <LeaderboardPage />,
       },
       {
         path: "auth",

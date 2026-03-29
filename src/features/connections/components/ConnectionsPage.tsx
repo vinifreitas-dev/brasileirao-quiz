@@ -1,31 +1,36 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useConnectionsStore } from "../hooks/useConnectionsGame";
-import { generateConnectionsChallenge } from "../utils";
 import { ConnectionsBoard } from "./ConnectionsBoard";
 import { ConnectionsResult } from "./ConnectionsResult";
 import { DailyModeToggle } from "../../../components/ui/DailyModeToggle";
+import { LoginCTA } from "../../../components/ui/LoginCTA";
 import { useDailyMode } from "../../../hooks/useDailyMode";
+import { useAuthStore } from "../../../stores/authStore";
+import { storePendingScore, getPendingScore } from "../../../lib/pendingScore";
+import { calcConnectionsScore } from "../../../lib/scoring";
 import type { ConnectionsChallenge } from "../types";
 
 export function ConnectionsPage() {
   const challenge = useConnectionsStore((s) => s.challenge);
   const loading = useConnectionsStore((s) => s.loading);
   const completed = useConnectionsStore((s) => s.completed);
-  const won = useConnectionsStore((s) => s.won);
-  const livesLeft = useConnectionsStore((s) => s.livesLeft);
   const startGame = useConnectionsStore((s) => s.startGame);
   const startFromConfig = useConnectionsStore((s) => s.startFromConfig);
   const resetGame = useConnectionsStore((s) => s.resetGame);
 
   const daily = useDailyMode();
+  const user = useAuthStore((s) => s.user);
+  const navigate = useNavigate();
   const initialized = useRef(false);
+  const [showLoginCTA, setShowLoginCTA] = useState(false);
 
   useEffect(() => {
     async function load() {
       resetGame();
       if (daily.mode === "daily") {
-        const config = await daily.loadDailyChallenge("connections", generateConnectionsChallenge);
-        if (config) startFromConfig(config as ConnectionsChallenge);
+        const result = await daily.loadDailyChallenge("connections");
+        if (result) startFromConfig(result.config as ConnectionsChallenge);
       } else {
         await startGame();
       }
@@ -40,11 +45,13 @@ export function ConnectionsPage() {
   useEffect(() => {
     if (modeRef.current === daily.mode) return;
     modeRef.current = daily.mode;
+    setShowLoginCTA(false);
+
     async function reload() {
       resetGame();
       if (daily.mode === "daily") {
-        const config = await daily.loadDailyChallenge("connections", generateConnectionsChallenge);
-        if (config) startFromConfig(config as ConnectionsChallenge);
+        const result = await daily.loadDailyChallenge("connections");
+        if (result) startFromConfig(result.config as ConnectionsChallenge);
       } else {
         await startGame();
       }
@@ -53,19 +60,45 @@ export function ConnectionsPage() {
   }, [daily.mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (completed && daily.mode === "daily") {
-      daily.saveScore({
-        score: won ? 4 - (4 - livesLeft) : 0,
-        completed: true,
-        attempts: 4 - livesLeft,
-      });
+    if (!completed || daily.mode !== "daily") return;
+
+    const state = useConnectionsStore.getState();
+    const finalScore = calcConnectionsScore({
+      groupsCorrect: state.correctGroupsCount,
+      noErrors: state.livesLeft === 4,
+      timeSeconds: state.elapsedSeconds,
+    });
+    const attempts = 4 - state.livesLeft;
+
+    if (!user) {
+      if (!getPendingScore("connections")) {
+        storePendingScore("connections", finalScore, attempts);
+      }
+      setShowLoginCTA(true);
+      return;
     }
+
+    daily.saveScore({ score: finalScore, completed: true, attempts, timeSeconds: state.elapsedSeconds });
   }, [completed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading || daily.loadingDaily) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-lg text-surface-400">Montando o desafio...</p>
+      </div>
+    );
+  }
+
+  if (daily.dailyUnavailable && daily.mode === "daily") {
+    return (
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center px-4 py-6">
+        <h1 className="mb-2 text-2xl font-bold text-surface-50 sm:text-3xl">🔗 Connections BR</h1>
+        <DailyModeToggle mode={daily.mode} onChangeMode={daily.setMode} />
+        <div className="mt-8 flex flex-col items-center gap-3 text-center">
+          <p className="text-5xl">⏳</p>
+          <p className="text-lg font-medium text-surface-200">Desafio de hoje ainda não disponível.</p>
+          <p className="text-sm text-surface-400">O desafio é gerado automaticamente à meia-noite (BRT). Tente novamente em breve ou jogue no modo Prática.</p>
+        </div>
       </div>
     );
   }
@@ -102,7 +135,11 @@ export function ConnectionsPage() {
       />
 
       <ConnectionsBoard />
-      <ConnectionsResult />
+      <ConnectionsResult isDaily={daily.mode === "daily"} />
+
+      {showLoginCTA && (
+        <LoginCTA onLogin={() => navigate("/auth?redirect=/connections")} onClose={() => setShowLoginCTA(false)} />
+      )}
 
       <style>{`
         @keyframes shake {

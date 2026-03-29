@@ -16,6 +16,8 @@ interface GuessStore {
   searchQuery: string;
   searchResults: Array<{ id: string; name: string; photo_url: string | null }>;
   searching: boolean;
+  startTime: number | null;
+  elapsedSeconds: number;
 
   startGame: () => Promise<void>;
   startFromConfig: (config: { player_id: string }) => Promise<void>;
@@ -37,6 +39,8 @@ export const useGuessStore = create<GuessStore>((set, get) => ({
   searchQuery: "",
   searchResults: [],
   searching: false,
+  startTime: null,
+  elapsedSeconds: 0,
 
   startGame: async () => {
     set({ loading: true });
@@ -59,6 +63,8 @@ export const useGuessStore = create<GuessStore>((set, get) => ({
       loading: false,
       searchQuery: "",
       searchResults: [],
+      startTime: Date.now(),
+      elapsedSeconds: 0,
     });
   },
 
@@ -108,6 +114,8 @@ export const useGuessStore = create<GuessStore>((set, get) => ({
       loading: false,
       searchQuery: "",
       searchResults: [],
+      startTime: Date.now(),
+      elapsedSeconds: 0,
     });
   },
 
@@ -150,12 +158,15 @@ export const useGuessStore = create<GuessStore>((set, get) => ({
   },
 
   submitGuess: (playerId: string, _playerName: string) => {
-    const { player, guessesLeft } = get();
+    const { player, guessesLeft, startTime } = get();
     if (!player || guessesLeft <= 0) return;
 
     const isCorrect = playerId === player.id;
     const newGuessesLeft = guessesLeft - 1;
     const isCompleted = isCorrect || newGuessesLeft <= 0;
+    const elapsed = isCompleted && startTime
+      ? Math.floor((Date.now() - startTime) / 1000)
+      : get().elapsedSeconds;
 
     set({
       guessesLeft: newGuessesLeft,
@@ -163,6 +174,7 @@ export const useGuessStore = create<GuessStore>((set, get) => ({
       won: isCorrect,
       searchQuery: "",
       searchResults: [],
+      elapsedSeconds: elapsed,
     });
 
     // Se errou mas ainda tem tentativas, revelar próxima dica automaticamente
@@ -181,6 +193,8 @@ export const useGuessStore = create<GuessStore>((set, get) => ({
       won: false,
       searchQuery: "",
       searchResults: [],
+      startTime: null,
+      elapsedSeconds: 0,
     });
   },
 }));

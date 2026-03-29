@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useGridStore } from "../hooks/useGridGame";
 
-export function GridResult() {
+export function GridResult({ isDaily }: { isDaily?: boolean }) {
   const score = useGridStore((s) => s.score);
   const cells = useGridStore((s) => s.cells);
   const completed = useGridStore((s) => s.completed);
@@ -70,12 +70,14 @@ export function GridResult() {
         >
           {copied ? "Copiado!" : "Compartilhar"}
         </button>
-        <button
-          onClick={handlePlayAgain}
-          className="rounded-lg border border-surface-600 px-4 py-2 font-medium text-surface-200 transition-colors hover:bg-surface-800"
-        >
-          Jogar novamente
-        </button>
+        {!isDaily && (
+          <button
+            onClick={handlePlayAgain}
+            className="rounded-lg border border-surface-600 px-4 py-2 font-medium text-surface-200 transition-colors hover:bg-surface-800"
+          >
+            Jogar novamente
+          </button>
+        )}
       </div>
     </div>
   );

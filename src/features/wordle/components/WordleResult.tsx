@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useWordleStore } from "../hooks/useWordleGame";
 
-export function WordleResult() {
+export function WordleResult({ isDaily }: { isDaily?: boolean }) {
   const completed = useWordleStore((s) => s.completed);
   const won = useWordleStore((s) => s.won);
   const answer = useWordleStore((s) => s.answer);
@@ -107,21 +107,23 @@ export function WordleResult() {
         >
           {copied ? "Copiado!" : "Compartilhar"}
         </button>
-        <button
-          onClick={handlePlayAgain}
-          style={{
-            padding: "8px 20px",
-            borderRadius: "8px",
-            border: "1px solid #475569",
-            backgroundColor: "transparent",
-            color: "#e2e8f0",
-            fontWeight: 500,
-            fontSize: "14px",
-            cursor: "pointer",
-          }}
-        >
-          Jogar novamente
-        </button>
+        {!isDaily && (
+          <button
+            onClick={handlePlayAgain}
+            style={{
+              padding: "8px 20px",
+              borderRadius: "8px",
+              border: "1px solid #475569",
+              backgroundColor: "transparent",
+              color: "#e2e8f0",
+              fontWeight: 500,
+              fontSize: "14px",
+              cursor: "pointer",
+            }}
+          >
+            Jogar novamente
+          </button>
+        )}
       </div>
     </div>
   );

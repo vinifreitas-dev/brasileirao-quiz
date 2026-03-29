@@ -13,6 +13,9 @@ interface ConnectionsStore {
   won: boolean;
   loading: boolean;
   shakeWrong: boolean;
+  startTime: number | null;
+  elapsedSeconds: number;
+  correctGroupsCount: number;
 
   // Ações
   startGame: () => Promise<void>;
@@ -33,6 +36,9 @@ export const useConnectionsStore = create<ConnectionsStore>((set, get) => ({
   won: false,
   loading: false,
   shakeWrong: false,
+  startTime: null,
+  elapsedSeconds: 0,
+  correctGroupsCount: 0,
 
   startGame: async () => {
     set({ loading: true });
@@ -51,6 +57,9 @@ export const useConnectionsStore = create<ConnectionsStore>((set, get) => ({
       won: false,
       loading: false,
       shakeWrong: false,
+      startTime: Date.now(),
+      elapsedSeconds: 0,
+      correctGroupsCount: 0,
     });
   },
 
@@ -65,6 +74,9 @@ export const useConnectionsStore = create<ConnectionsStore>((set, get) => ({
       won: false,
       loading: false,
       shakeWrong: false,
+      startTime: Date.now(),
+      elapsedSeconds: 0,
+      correctGroupsCount: 0,
     });
   },
 
@@ -82,7 +94,7 @@ export const useConnectionsStore = create<ConnectionsStore>((set, get) => ({
   },
 
   submitGuess: () => {
-    const { selectedIds, challenge, remainingPlayers, revealedGroups, livesLeft } = get();
+    const { selectedIds, challenge, remainingPlayers, revealedGroups, livesLeft, correctGroupsCount, startTime } = get();
     if (!challenge || selectedIds.length !== 4) return;
 
     // Verificar se os 4 selecionados pertencem ao mesmo grupo
@@ -97,8 +109,11 @@ export const useConnectionsStore = create<ConnectionsStore>((set, get) => ({
       const newRemaining = remainingPlayers.filter(
         (p) => !selectedIds.includes(p.id)
       );
-
+      const newCorrect = correctGroupsCount + 1;
       const isCompleted = newRevealed.length === 4;
+      const elapsed = isCompleted && startTime
+        ? Math.floor((Date.now() - startTime) / 1000)
+        : get().elapsedSeconds;
 
       set({
         revealedGroups: newRevealed,
@@ -106,6 +121,8 @@ export const useConnectionsStore = create<ConnectionsStore>((set, get) => ({
         selectedIds: [],
         completed: isCompleted,
         won: isCompleted,
+        correctGroupsCount: newCorrect,
+        elapsedSeconds: elapsed,
       });
     } else {
       // Erro! Perder uma vida
@@ -121,6 +138,7 @@ export const useConnectionsStore = create<ConnectionsStore>((set, get) => ({
         const unrevealed = challenge.groups.filter(
           (g) => !revealedGroups.some((r) => r.category === g.category)
         );
+        const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : get().elapsedSeconds;
         set({
           livesLeft: 0,
           completed: true,
@@ -131,6 +149,7 @@ export const useConnectionsStore = create<ConnectionsStore>((set, get) => ({
             ...unrevealed.map((g) => ({ ...g, revealed: true })),
           ],
           remainingPlayers: [],
+          elapsedSeconds: elapsed,
         });
       } else {
         set({
@@ -153,6 +172,9 @@ export const useConnectionsStore = create<ConnectionsStore>((set, get) => ({
       completed: false,
       won: false,
       shakeWrong: false,
+      startTime: null,
+      elapsedSeconds: 0,
+      correctGroupsCount: 0,
     });
   },
 }));

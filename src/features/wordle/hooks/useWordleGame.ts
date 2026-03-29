@@ -15,6 +15,8 @@ interface WordleStore {
   loading: boolean;
   error: string | null;
   keyboardState: Record<string, "correct" | "present" | "absent" | "unused">;
+  startTime: number | null;
+  elapsedSeconds: number;
 
   startGame: () => Promise<void>;
   startFromConfig: (config: { player_id: string }) => Promise<void>;
@@ -33,6 +35,8 @@ export const useWordleStore = create<WordleStore>((set, get) => ({
   loading: false,
   error: null,
   keyboardState: {},
+  startTime: null,
+  elapsedSeconds: 0,
 
   startGame: async () => {
     set({ loading: true });
@@ -51,6 +55,8 @@ export const useWordleStore = create<WordleStore>((set, get) => ({
       loading: false,
       error: null,
       keyboardState: {},
+      startTime: Date.now(),
+      elapsedSeconds: 0,
     });
   },
 
@@ -76,6 +82,8 @@ export const useWordleStore = create<WordleStore>((set, get) => ({
       loading: false,
       error: null,
       keyboardState: {},
+      startTime: Date.now(),
+      elapsedSeconds: 0,
     });
   },
 
@@ -113,6 +121,9 @@ export const useWordleStore = create<WordleStore>((set, get) => ({
       letters.every((l) => l.status === "correct");
 
     const isCompleted = isCorrect || newGuessesLeft <= 0;
+    const elapsed = isCompleted && get().startTime
+      ? Math.floor((Date.now() - get().startTime!) / 1000)
+      : get().elapsedSeconds;
 
     set({
       guesses: newGuesses,
@@ -122,6 +133,7 @@ export const useWordleStore = create<WordleStore>((set, get) => ({
       won: isCorrect,
       error: null,
       keyboardState: getKeyboardState(newGuesses),
+      elapsedSeconds: elapsed,
     });
   },
 
@@ -135,6 +147,8 @@ export const useWordleStore = create<WordleStore>((set, get) => ({
       won: false,
       error: null,
       keyboardState: {},
+      startTime: null,
+      elapsedSeconds: 0,
     });
   },
 }));

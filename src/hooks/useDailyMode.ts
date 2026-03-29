@@ -1,64 +1,109 @@
 import { useState, useCallback } from "react";
 import { useAuthStore } from "../stores/authStore";
-import { getOrCreateDailyChallenge, hasPlayedToday, saveDailyScore } from "../lib/daily";
+import { getDailyChallenge, hasPlayedToday, saveDailyScore, getUserScore } from "../lib/daily";
+import { getPendingScore, clearPendingScore } from "../lib/pendingScore";
+
+export interface DailyLoadResult {
+  config: unknown;
+  alreadyPlayed: boolean;
+  previousScore: number | null;
+}
 
 interface UseDailyModeReturn {
   mode: "daily" | "practice";
   setMode: (mode: "daily" | "practice") => void;
   challengeId: string | null;
   alreadyPlayed: boolean;
+  dailyUnavailable: boolean;
   loadingDaily: boolean;
-  /** Busca ou cria o desafio do dia. Retorna o config salvo. */
-  loadDailyChallenge: (gameType: string, generateFn: () => Promise<unknown | null>) => Promise<unknown | null>;
-  /** Salva o score do usuário (só funciona se logado e no modo daily) */
-  saveScore: (params: { score: number; completed: boolean; attempts: number }) => Promise<void>;
+  loadDailyChallenge: (gameType: string) => Promise<DailyLoadResult | null>;
+  saveScore: (params: { score: number; completed: boolean; attempts: number; timeSeconds?: number }) => Promise<boolean>;
 }
 
 export function useDailyMode(): UseDailyModeReturn {
   const [mode, setMode] = useState<"daily" | "practice">("daily");
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [alreadyPlayed, setAlreadyPlayed] = useState(false);
+  const [dailyUnavailable, setDailyUnavailable] = useState(false);
   const [loadingDaily, setLoadingDaily] = useState(false);
   const user = useAuthStore((s) => s.user);
 
   const loadDailyChallenge = useCallback(async (
-    gameType: string,
-    generateFn: () => Promise<unknown | null>
-  ): Promise<unknown | null> => {
+    gameType: string
+  ): Promise<DailyLoadResult | null> => {
     setLoadingDaily(true);
     setAlreadyPlayed(false);
+    setDailyUnavailable(false);
 
-    const challenge = await getOrCreateDailyChallenge(gameType, generateFn);
+    const challenge = await getDailyChallenge(gameType);
+
     if (!challenge) {
+      setDailyUnavailable(true);
       setLoadingDaily(false);
       return null;
     }
 
     setChallengeId(challenge.id);
 
-    // Verificar se o usuário já jogou hoje
+    let played = false;
+    let previousScore: number | null = null;
+
+    if (!user) {
+      const pending = getPendingScore(gameType);
+      if (pending) {
+        setAlreadyPlayed(true);
+        setLoadingDaily(false);
+        return { config: challenge.config, alreadyPlayed: true, previousScore: pending.score };
+      }
+    }
+
     if (user) {
-      const played = await hasPlayedToday(user.id, challenge.id);
+      played = await hasPlayedToday(user.id, challenge.id);
+
+      if (played) {
+        const prev = await getUserScore(user.id, challenge.id);
+        previousScore = prev?.score ?? null;
+      } else {
+        // Verificar se há score pendente de quando era anônimo
+        const pending = getPendingScore(gameType);
+        if (pending) {
+          const saved = await saveDailyScore({
+            userId: user.id,
+            challengeId: challenge.id,
+            score: pending.score,
+            completed: true,
+            attempts: pending.attempts,
+          });
+          if (saved) {
+            clearPendingScore(gameType);
+            played = true;
+            previousScore = pending.score;
+          }
+        }
+      }
+
       setAlreadyPlayed(played);
     }
 
     setLoadingDaily(false);
-    return challenge.config;
+    return { config: challenge.config, alreadyPlayed: played, previousScore };
   }, [user]);
 
   const saveScore = useCallback(async (params: {
     score: number;
     completed: boolean;
     attempts: number;
-  }) => {
-    if (!user || !challengeId || mode !== "daily") return;
+    timeSeconds?: number;
+  }): Promise<boolean> => {
+    if (!user || !challengeId || mode !== "daily") return false;
 
-    await saveDailyScore({
+    return saveDailyScore({
       userId: user.id,
       challengeId,
       score: params.score,
       completed: params.completed,
       attempts: params.attempts,
+      timeSeconds: params.timeSeconds,
     });
   }, [user, challengeId, mode]);
 
@@ -67,6 +112,7 @@ export function useDailyMode(): UseDailyModeReturn {
     setMode,
     challengeId,
     alreadyPlayed,
+    dailyUnavailable,
     loadingDaily,
     loadDailyChallenge,
     saveScore,

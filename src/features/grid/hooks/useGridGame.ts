@@ -12,10 +12,13 @@ interface GridStore {
   usedPlayerIds: string[];
   selectedCell: { row: number; col: number } | null;
   loading: boolean;
+  startTime: number | null;
+  elapsedSeconds: number;
 
   // Ações
   startGame: () => Promise<void>;
   startFromConfig: (challenge: GridChallenge) => void;
+  restoreGame: (challenge: GridChallenge, score: number) => void;
   selectCell: (row: number, col: number) => void;
   closeSearch: () => void;
   submitGuess: (playerId: string, playerName: string, playerPhoto: string | null) => Promise<void>;
@@ -44,6 +47,8 @@ export const useGridStore = create<GridStore>((set, get) => ({
   usedPlayerIds: [],
   selectedCell: null,
   loading: false,
+  startTime: null,
+  elapsedSeconds: 0,
 
   startGame: async () => {
     set({ loading: true });
@@ -61,6 +66,8 @@ export const useGridStore = create<GridStore>((set, get) => ({
       usedPlayerIds: [],
       selectedCell: null,
       loading: false,
+      startTime: Date.now(),
+      elapsedSeconds: 0,
     });
   },
 
@@ -71,6 +78,21 @@ export const useGridStore = create<GridStore>((set, get) => ({
       guessesLeft: 9,
       completed: false,
       score: 0,
+      usedPlayerIds: [],
+      selectedCell: null,
+      loading: false,
+      startTime: Date.now(),
+      elapsedSeconds: 0,
+    });
+  },
+
+  restoreGame: (challenge: GridChallenge, score: number) => {
+    set({
+      challenge,
+      cells: createEmptyCells(),
+      guessesLeft: 0,
+      completed: true,
+      score,
       usedPlayerIds: [],
       selectedCell: null,
       loading: false,
@@ -111,6 +133,9 @@ export const useGridStore = create<GridStore>((set, get) => ({
     const newScore = isCorrect ? score + 1 : score;
     const filledCells = newCells.flat().filter((c) => c.status !== "empty").length;
     const isCompleted = newGuessesLeft <= 0 || filledCells >= 9;
+    const elapsed = isCompleted && get().startTime
+      ? Math.floor((Date.now() - get().startTime!) / 1000)
+      : get().elapsedSeconds;
 
     set({
       cells: newCells,
@@ -119,6 +144,7 @@ export const useGridStore = create<GridStore>((set, get) => ({
       usedPlayerIds: [...usedPlayerIds, playerId],
       completed: isCompleted,
       selectedCell: null,
+      elapsedSeconds: elapsed,
     });
   },
 
@@ -131,6 +157,8 @@ export const useGridStore = create<GridStore>((set, get) => ({
       score: 0,
       usedPlayerIds: [],
       selectedCell: null,
+      startTime: null,
+      elapsedSeconds: 0,
     });
   },
 }));

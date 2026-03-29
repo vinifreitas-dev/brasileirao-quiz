@@ -1,0 +1,26 @@
+# Configuração do projeto Supabase (CLI)
+# Documentação: https://supabase.com/docs/guides/cli/config
+
+[project]
+# Preencha com o ID do seu projeto (encontrado em Settings > General no dashboard)
+# project_id = "seu-project-id-aqui"
+
+# ============================================================
+# Edge Functions
+# ============================================================
+
+[functions.generate-daily-challenges]
+# verify_jwt = false permite chamada sem autenticação (cron sem token)
+# Se quiser proteger a rota, remova essa linha e configure um Bearer token
+verify_jwt = false
+
+# ============================================================
+# Cron Jobs (via Supabase Scheduler — requer Supabase CLI >= 1.170)
+# ============================================================
+# Gera desafios diários às 00h00 BRT = 03h00 UTC
+# O campo "function" aponta para a Edge Function acima
+
+[[cron.jobs]]
+name = "generate-daily-challenges"
+schedule = "0 3 * * *"
+function = "generate-daily-challenges"

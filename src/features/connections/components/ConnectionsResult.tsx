@@ -9,7 +9,7 @@ const difficultyEmoji: Record<number, string> = {
   4: "🟪",
 };
 
-export function ConnectionsResult() {
+export function ConnectionsResult({ isDaily }: { isDaily?: boolean }) {
   const completed = useConnectionsStore((s) => s.completed);
   const won = useConnectionsStore((s) => s.won);
   const livesLeft = useConnectionsStore((s) => s.livesLeft);
@@ -87,21 +87,23 @@ export function ConnectionsResult() {
         >
           {copied ? "Copiado!" : "Compartilhar"}
         </button>
-        <button
-          onClick={handlePlayAgain}
-          style={{
-            padding: "8px 20px",
-            borderRadius: "8px",
-            border: "1px solid #475569",
-            backgroundColor: "transparent",
-            color: "#e2e8f0",
-            fontWeight: 500,
-            fontSize: "14px",
-            cursor: "pointer",
-          }}
-        >
-          Jogar novamente
-        </button>
+        {!isDaily && (
+          <button
+            onClick={handlePlayAgain}
+            style={{
+              padding: "8px 20px",
+              borderRadius: "8px",
+              border: "1px solid #475569",
+              backgroundColor: "transparent",
+              color: "#e2e8f0",
+              fontWeight: 500,
+              fontSize: "14px",
+              cursor: "pointer",
+            }}
+          >
+            Jogar novamente
+          </button>
+        )}
       </div>
     </div>
   );

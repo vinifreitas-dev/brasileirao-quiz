@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useGuessStore } from "../hooks/useGuessGame";
 
-export function GuessResult() {
+export function GuessResult({ isDaily }: { isDaily?: boolean }) {
   const completed = useGuessStore((s) => s.completed);
   const won = useGuessStore((s) => s.won);
   const player = useGuessStore((s) => s.player);
@@ -104,21 +104,23 @@ export function GuessResult() {
         >
           {copied ? "Copiado!" : "Compartilhar"}
         </button>
-        <button
-          onClick={handlePlayAgain}
-          style={{
-            padding: "8px 20px",
-            borderRadius: "8px",
-            border: "1px solid #475569",
-            backgroundColor: "transparent",
-            color: "#e2e8f0",
-            fontWeight: 500,
-            fontSize: "14px",
-            cursor: "pointer",
-          }}
-        >
-          Jogar novamente
-        </button>
+        {!isDaily && (
+          <button
+            onClick={handlePlayAgain}
+            style={{
+              padding: "8px 20px",
+              borderRadius: "8px",
+              border: "1px solid #475569",
+              backgroundColor: "transparent",
+              color: "#e2e8f0",
+              fontWeight: 500,
+              fontSize: "14px",
+              cursor: "pointer",
+            }}
+          >
+            Jogar novamente
+          </button>
+        )}
       </div>
     </div>
   );

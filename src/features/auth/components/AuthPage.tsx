@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuthStore } from "../../../stores/authStore";
 import { LoginForm } from "./LoginForm";
 import { SignUpForm } from "./SignUpForm";
@@ -10,9 +10,11 @@ type AuthView = "login" | "signup" | "confirm" | "forgot";
 export function AuthPage() {
   const { user } = useAuthStore();
   const [view, setView] = useState<AuthView>("login");
+  const [searchParams] = useSearchParams();
 
   if (user) {
-    return <Navigate to="/" replace />;
+    const redirect = searchParams.get("redirect") ?? "/";
+    return <Navigate to={redirect} replace />;
   }
 
   return (

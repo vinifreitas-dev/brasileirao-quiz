@@ -1,25 +1,21 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useGuessStore } from "../hooks/useGuessGame";
-import { getRandomGuessPlayer } from "../utils";
 import { HintCard } from "./HintCard";
 import { GuessSearch } from "./GuessSearch";
 import { GuessResult } from "./GuessResult";
 import { DailyModeToggle } from "../../../components/ui/DailyModeToggle";
+import { LoginCTA } from "../../../components/ui/LoginCTA";
 import { useDailyMode } from "../../../hooks/useDailyMode";
-
-/** Gera config para o desafio diário (salva o player_id) */
-async function generateGuessConfig() {
-  const player = await getRandomGuessPlayer();
-  if (!player) return null;
-  return { player_id: player.id };
-}
+import { useAuthStore } from "../../../stores/authStore";
+import { storePendingScore, getPendingScore } from "../../../lib/pendingScore";
+import { calcGuessScore } from "../../../lib/scoring";
 
 export function GuessPage() {
   const player = useGuessStore((s) => s.player);
   const hints = useGuessStore((s) => s.hints);
   const hintsRevealed = useGuessStore((s) => s.hintsRevealed);
   const completed = useGuessStore((s) => s.completed);
-  const won = useGuessStore((s) => s.won);
   const loading = useGuessStore((s) => s.loading);
   const startGame = useGuessStore((s) => s.startGame);
   const startFromConfig = useGuessStore((s) => s.startFromConfig);
@@ -27,14 +23,17 @@ export function GuessPage() {
   const revealHint = useGuessStore((s) => s.revealHint);
 
   const daily = useDailyMode();
+  const user = useAuthStore((s) => s.user);
+  const navigate = useNavigate();
   const initialized = useRef(false);
+  const [showLoginCTA, setShowLoginCTA] = useState(false);
 
   useEffect(() => {
     async function load() {
       resetGame();
       if (daily.mode === "daily") {
-        const config = await daily.loadDailyChallenge("guess", generateGuessConfig);
-        if (config) await startFromConfig(config as { player_id: string });
+        const result = await daily.loadDailyChallenge("guess");
+        if (result) await startFromConfig(result.config as { player_id: string });
       } else {
         await startGame();
       }
@@ -49,11 +48,13 @@ export function GuessPage() {
   useEffect(() => {
     if (modeRef.current === daily.mode) return;
     modeRef.current = daily.mode;
+    setShowLoginCTA(false);
+
     async function reload() {
       resetGame();
       if (daily.mode === "daily") {
-        const config = await daily.loadDailyChallenge("guess", generateGuessConfig);
-        if (config) await startFromConfig(config as { player_id: string });
+        const result = await daily.loadDailyChallenge("guess");
+        if (result) await startFromConfig(result.config as { player_id: string });
       } else {
         await startGame();
       }
@@ -62,19 +63,45 @@ export function GuessPage() {
   }, [daily.mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (completed && daily.mode === "daily") {
-      daily.saveScore({
-        score: won ? hints.length - hintsRevealed + 1 : 0,
-        completed: true,
-        attempts: 3 - useGuessStore.getState().guessesLeft,
-      });
+    if (!completed || daily.mode !== "daily") return;
+
+    const state = useGuessStore.getState();
+    const attempts = 3 - state.guessesLeft;
+    const finalScore = calcGuessScore({
+      won: state.won,
+      hintsRevealed: state.hintsRevealed,
+      timeSeconds: state.elapsedSeconds,
+    });
+
+    if (!user) {
+      if (!getPendingScore("guess")) {
+        storePendingScore("guess", finalScore, attempts);
+      }
+      setShowLoginCTA(true);
+      return;
     }
+
+    daily.saveScore({ score: finalScore, completed: true, attempts, timeSeconds: state.elapsedSeconds });
   }, [completed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading || daily.loadingDaily) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-lg text-surface-400">Escolhendo um jogador misterioso...</p>
+      </div>
+    );
+  }
+
+  if (daily.dailyUnavailable && daily.mode === "daily") {
+    return (
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center px-4 py-6">
+        <h1 className="mb-2 text-2xl font-bold text-surface-50 sm:text-3xl">🕵️ Quem é o Jogador?</h1>
+        <DailyModeToggle mode={daily.mode} onChangeMode={daily.setMode} />
+        <div className="mt-8 flex flex-col items-center gap-3 text-center">
+          <p className="text-5xl">⏳</p>
+          <p className="text-lg font-medium text-surface-200">Desafio de hoje ainda não disponível.</p>
+          <p className="text-sm text-surface-400">O desafio é gerado automaticamente à meia-noite (BRT). Tente novamente em breve ou jogue no modo Prática.</p>
+        </div>
       </div>
     );
   }
@@ -150,7 +177,11 @@ export function GuessPage() {
       )}
 
       <GuessSearch />
-      <GuessResult />
+      <GuessResult isDaily={daily.mode === "daily"} />
+
+      {showLoginCTA && (
+        <LoginCTA onLogin={() => navigate("/auth?redirect=/guess")} onClose={() => setShowLoginCTA(false)} />
+      )}
 
       <style>{`
         @keyframes fadeIn {
