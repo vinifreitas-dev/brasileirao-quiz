@@ -20,7 +20,7 @@ const timeOptions: Array<{ value: TimeFilter; label: string }> = [
 
 export function LeaderboardPage() {
   const [gameFilter, setGameFilter] = useState<GameFilter>("all");
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>("today");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("alltime");
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [topPlayers, setTopPlayers] = useState<PlayerStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,7 +105,10 @@ export function LeaderboardPage() {
         {gameOptions.map((opt) => (
           <button
             key={opt.value}
-            onClick={() => setGameFilter(opt.value)}
+            onClick={() => {
+              setGameFilter(opt.value);
+              if (opt.value === "all") setTimeFilter("alltime");
+            }}
             style={{
               padding: "6px 14px",
               borderRadius: "8px",
@@ -123,8 +126,8 @@ export function LeaderboardPage() {
         ))}
       </div>
 
-      {/* Filtro por período (só no modo ranking) */}
-      {view === "ranking" && (
+      {/* Filtro por período (só no modo ranking e quando não for "Todos") */}
+      {view === "ranking" && gameFilter !== "all" && (
         <div style={{
           display: "flex",
           justifyContent: "center",

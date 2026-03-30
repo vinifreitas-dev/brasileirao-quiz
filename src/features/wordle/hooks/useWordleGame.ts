@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { WordleGuess, WordlePlayer } from "../types";
-import { getRandomPlayer, compareGuess, validatePlayerName, getKeyboardState } from "../utils";
+import { getRandomPlayer, compareGuess, getKeyboardState } from "../utils";
 import { supabase } from "../../../lib/supabase";
 
 const MAX_GUESSES = 6;
@@ -103,21 +103,14 @@ export const useWordleStore = create<WordleStore>((set, get) => ({
       return;
     }
 
-    // Verificar se é um nome válido no banco
-    const validName = await validatePlayerName(input);
-    if (!validName) {
-      set({ error: "Jogador não encontrado. Tente outro nome." });
-      return;
-    }
-
     // Comparar com a resposta
-    const letters = compareGuess(validName, answer.name);
-    const newGuess: WordleGuess = { letters, playerName: validName };
+    const letters = compareGuess(input, answer.name);
+    const newGuess: WordleGuess = { letters, playerName: input };
     const newGuesses = [...guesses, newGuess];
     const newGuessesLeft = guessesLeft - 1;
 
     // Verificar vitória (todas as letras verdes e mesmo tamanho)
-    const isCorrect = validName.length === answer.name.length &&
+    const isCorrect = input.length === answer.name.length &&
       letters.every((l) => l.status === "correct");
 
     const isCompleted = isCorrect || newGuessesLeft <= 0;
